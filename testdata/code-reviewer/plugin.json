@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "code-reviewer",
+    "version": "1.0.1",
+    "description": "Reviews pull requests and suggests improvements for code quality and style.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

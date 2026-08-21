@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "weather-cli": {
+      "type": "stdio",
+      "command": "weather-mcp-server",
+      "args": ["--units", "metric"],
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  }
+}

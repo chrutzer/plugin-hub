@@ -8,8 +8,8 @@ loaded plugin's original zip can also be downloaded again.
 ## How it works
 
 1. A config YAML file (`config.yaml` by default) lists one or more
-   **sources**: each is a zip file reachable by URL (`http://`/`https://`)
-   or by local path.
+   **sources**: each is a zip file reachable by URL (`http://`/`https://`),
+   a local zip file path, or a local directory path (zipped on the fly).
 2. On startup (and whenever `Reload()` is called), each source's zip is
    fetched/copied into a temporary directory and extracted. If the extracted
    contents contain `plugin.json` (directly, or inside a single top-level
@@ -43,6 +43,7 @@ Use `-config` to point at a different config file (default `config.yaml`).
 ```yaml
 sources:
   - testdata/sample-plugin.zip
+  - testdata/sample-plugin
   - https://example.com/my-plugin.zip
   - https://example.com/plugin-bundle.zip
 ```

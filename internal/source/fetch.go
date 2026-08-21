@@ -12,11 +12,15 @@ import (
 )
 
 // Fetch retrieves a zip file from a location into destZip. The location is
-// treated as a URL if it starts with "http://" or "https://", otherwise as
-// a local file path.
+// treated as a URL if it starts with "http://" or "https://"; otherwise, if
+// it is a local directory, its contents are zipped into destZip; otherwise
+// it's treated as a local zip file path.
 func Fetch(location, destZip string) error {
 	if strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") {
 		return fetchURL(location, destZip)
+	}
+	if info, err := os.Stat(location); err == nil && info.IsDir() {
+		return zipDir(location, destZip)
 	}
 	return fetchFile(location, destZip)
 }
@@ -62,6 +66,47 @@ func fetchFile(path, destZip string) error {
 		return fmt.Errorf("copy %s: %w", path, err)
 	}
 	return nil
+}
+
+func zipDir(dir, destZip string) error {
+	out, err := os.Create(destZip)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	zw := zip.NewWriter(out)
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		if info.IsDir() {
+			_, err := zw.Create(rel + "/")
+			return err
+		}
+		w, err := zw.Create(rel)
+		if err != nil {
+			return err
+		}
+		in, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("open %s: %w", path, err)
+		}
+		defer in.Close()
+		_, err = io.Copy(w, in)
+		return err
+	})
+	if err != nil {
+		return fmt.Errorf("zip %s: %w", dir, err)
+	}
+	return zw.Close()
 }
 
 // Extract unzips zipPath into destDir, rejecting any entry that would

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "changelog-writer",
+    "version": "1.0.0",
+    "description": "Generates changelog entries from commit history and links to a remote MCP server for release notes.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

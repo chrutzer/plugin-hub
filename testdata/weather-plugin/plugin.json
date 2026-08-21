@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "weather-plugin",
+    "version": "1.0.0",
+    "description": "Provides current weather and forecast data via a local MCP server.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}
