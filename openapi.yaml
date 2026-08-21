@@ -4,7 +4,9 @@ info:
   description: >
     Loads Agent Plugins (https://agent-plugins.org/) from configured zip
     sources, validates them against the Agent Plugins v1.0.0 specification,
-    and serves them as a JSON API.
+    and serves them as a JSON API. A source's zip may either be a single
+    plugin or a bundle of nested zips (recursively, to any depth), each of
+    which is itself a plugin or another bundle.
   version: "1.0.0"
 servers:
   - url: http://localhost:8080
