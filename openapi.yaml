@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: plugin-hub API
+  description: >
+    Loads Agent Plugins (https://agent-plugins.org/) from configured zip
+    sources, validates them against the Agent Plugins v1.0.0 specification,
+    and serves them as a JSON API.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+paths:
+  /:
+    get:
+      summary: List loaded plugins
+      operationId: listPlugins
+      responses:
+        "200":
+          description: Summary of every currently loaded plugin.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PluginSummary"
+  /{name}:
+    get:
+      summary: Get plugin detail
+      operationId: getPlugin
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Plugin name, as declared in its `plugin.json` manifest.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full plugin detail including manifest, skills, and MCP servers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PluginDetail"
+        "404":
+          description: No plugin with this name is loaded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /{name}.zip:
+    get:
+      summary: Download a plugin's original zip archive
+      operationId: downloadPlugin
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Plugin name, as declared in its `plugin.json` manifest.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The plugin's original source zip file.
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No plugin with this name is loaded, or its archive is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    PluginSummary:
+      type: object
+      required: [name, source]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        source:
+          type: string
+          description: The source location (URL or path) this plugin was loaded from.
+        skills:
+          type: array
+          items:
+            type: string
+          description: Names of the plugin's skills.
+        mcpServers:
+          type: array
+          items:
+            type: string
+          description: Names of the plugin's MCP servers.
+
+    PluginDetail:
+      type: object
+      required: [name, source, manifest]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        source:
+          type: string
+          description: The source location (URL or path) this plugin was loaded from.
+        mcpServers:
+          type: array
+          items:
+            type: string
+          description: Names of the plugin's MCP servers.
+        manifest:
+          $ref: "#/components/schemas/Manifest"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/Skill"
+        mcp:
+          type: object
+          description: MCP servers keyed by server name.
+          additionalProperties:
+            $ref: "#/components/schemas/MCPServer"
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Non-fatal issues encountered while loading this plugin.
+
+    Manifest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        author:
+          $ref: "#/components/schemas/Author"
+        homepage:
+          type: string
+        repository:
+          type: string
+        license:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        extensions:
+          type: object
+          description: Vendor extension namespaces, each an arbitrary JSON object.
+          additionalProperties:
+            type: object
+
+    Author:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        url:
+          type: string
+
+    Skill:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        license:
+          type: string
+        compatibility:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        allowedTools:
+          type: string
+
+    MCPServer:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [stdio, streamable-http, sse]
+        command:
+          type: string
+          description: Required when type is "stdio".
+        args:
+          type: array
+          items:
+            type: string
+        env:
+          type: object
+          additionalProperties:
+            type: string
+        cwd:
+          type: string
+        url:
+          type: string
+          description: Required when type is "streamable-http" or "sse".
+        headers:
+          type: object
+          additionalProperties:
+            type: string
