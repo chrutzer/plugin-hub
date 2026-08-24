@@ -53,9 +53,9 @@ func ParseManifest(data []byte) (*Manifest, []string, error) {
 	}
 
 	if extRaw, ok := raw["extensions"]; ok {
-		var probe interface{}
+		var probe any
 		if err := json.Unmarshal(extRaw, &probe); err == nil {
-			if _, isObj := probe.(map[string]interface{}); !isObj {
+			if _, isObj := probe.(map[string]any); !isObj {
 				warnings = append(warnings, "extensions field is not an object, ignored")
 				delete(raw, "extensions")
 			}
@@ -73,7 +73,7 @@ func ParseManifest(data []byte) (*Manifest, []string, error) {
 	}
 
 	for namespace, value := range m.Extensions {
-		var probe interface{}
+		var probe any
 		if err := json.Unmarshal(value, &probe); err != nil {
 			return nil, warnings, fmt.Errorf("extensions.%s: invalid JSON: %w", namespace, err)
 		}

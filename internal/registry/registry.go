@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -215,6 +216,9 @@ func (r *Registry) List() []*plugin.Plugin {
 	for _, p := range r.plugins {
 		list = append(list, p)
 	}
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Manifest.Name < list[j].Manifest.Name
+	})
 	return list
 }
 

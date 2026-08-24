@@ -52,8 +52,7 @@ sources:
 
 | Method | Path                             | Description                          |
 | ------ | --------------------------------- | ------------------------------------ |
-| GET    | `/`                                | List loaded plugins (summary).       |
-| GET    | `/{name}`                          | Full plugin detail incl. skills/MCP. |
+| GET    | `/`                                | List loaded plugins, full detail incl. skills/MCP. |
 | GET    | `/{name}.zip`                      | Download the plugin's original zip.  |
 
 Plugins are keyed by their manifest `name` (from `plugin.json`), not the

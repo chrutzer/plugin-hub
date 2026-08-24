@@ -1,0 +1,23 @@
+version: '3'
+
+tasks:
+  run:
+    desc: Run the plugin-hub server
+    cmds:
+      - go run ./cmd/plugin-hub -config config.yaml
+
+  build:
+    desc: Build the plugin-hub binary
+    cmds:
+      - go build -o bin/plugin-hub ./cmd/plugin-hub
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  generate:
+    desc: Generate the Go client and server interface from openapi.yaml
+    cmds:
+      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config client/config.yaml openapi.yaml
+      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config internal/api/config.yaml openapi.yaml

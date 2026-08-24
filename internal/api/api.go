@@ -13,18 +13,16 @@ import (
 
 type Server struct {
 	reg *registry.Registry
-	mux *http.ServeMux
 }
 
+var _ ServerInterface = (*Server)(nil)
+
 func New(reg *registry.Registry) *Server {
-	s := &Server{reg: reg, mux: http.NewServeMux()}
-	s.mux.HandleFunc("GET /", s.handleList)
-	s.mux.HandleFunc("GET /{name}", s.handleGet)
-	return s
+	return &Server{reg: reg}
 }
 
 func (s *Server) Handler() http.Handler {
-	return corsMiddleware(s.mux)
+	return corsMiddleware(Handler(s))
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -40,111 +38,142 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-type pluginSummary struct {
-	Name        string   `json:"name"`
-	Version     string   `json:"version,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Source      string   `json:"source"`
-	Skills      []string `json:"skills,omitempty"`
-	MCPServers  []string `json:"mcpServers,omitempty"`
+func stringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
-type pluginDetail struct {
-	pluginSummary
-	Manifest manifestView                `json:"manifest"`
-	Skills   []plugin.Skill              `json:"skills,omitempty"`
-	MCP      map[string]plugin.MCPServer `json:"mcp,omitempty"`
-	Warnings []string                    `json:"warnings,omitempty"`
-}
-
-type manifestView struct {
-	Name        string                     `json:"name"`
-	Version     string                     `json:"version,omitempty"`
-	Description string                     `json:"description,omitempty"`
-	Author      *plugin.Author             `json:"author,omitempty"`
-	Homepage    string                     `json:"homepage,omitempty"`
-	Repository  string                     `json:"repository,omitempty"`
-	License     string                     `json:"license,omitempty"`
-	Keywords    []string                   `json:"keywords,omitempty"`
-	Extensions  map[string]json.RawMessage `json:"extensions,omitempty"`
-}
-
-func toManifestView(m *plugin.Manifest) manifestView {
-	return manifestView{
-		Name:        m.Name,
-		Version:     m.Version,
-		Description: m.Description,
-		Author:      m.Author,
-		Homepage:    m.Homepage,
-		Repository:  m.Repository,
-		License:     m.License,
-		Keywords:    m.Keywords,
-		Extensions:  m.Extensions,
+func toAuthor(a *plugin.Author) *Author {
+	if a == nil {
+		return nil
+	}
+	return &Author{
+		Name:  stringPtr(a.Name),
+		Email: stringPtr(a.Email),
+		Url:   stringPtr(a.URL),
 	}
 }
 
-func summarize(p *plugin.Plugin) pluginSummary {
-	var skillNames []string
-	for _, sk := range p.Skills {
-		skillNames = append(skillNames, sk.Name)
+// toExtensions re-decodes each namespace's raw JSON into a generic object.
+// ParseManifest already rejects non-object extension values, so this only
+// fails on programmer error.
+func toExtensions(ext map[string]json.RawMessage) *map[string]map[string]interface{} {
+	if len(ext) == 0 {
+		return nil
 	}
-	var mcpNames []string
-	if p.MCP != nil {
-		for name := range p.MCP.MCPServers {
-			mcpNames = append(mcpNames, name)
+	out := make(map[string]map[string]interface{}, len(ext))
+	for namespace, raw := range ext {
+		var obj map[string]interface{}
+		if err := json.Unmarshal(raw, &obj); err != nil {
+			continue
 		}
+		out[namespace] = obj
 	}
-	return pluginSummary{
-		Name:        p.Manifest.Name,
-		Version:     p.Manifest.Version,
-		Description: p.Manifest.Description,
-		Source:      p.SourceName,
-		Skills:      skillNames,
-		MCPServers:  mcpNames,
-	}
+	return &out
 }
 
-func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
+func toSkills(skills []plugin.Skill) *[]Skill {
+	if len(skills) == 0 {
+		return nil
+	}
+	out := make([]Skill, len(skills))
+	for i, sk := range skills {
+		s := Skill{
+			Name:          sk.Name,
+			Description:   sk.Description,
+			License:       stringPtr(sk.License),
+			Compatibility: stringPtr(sk.Compatibility),
+			AllowedTools:  stringPtr(sk.AllowedTools),
+		}
+		if len(sk.Metadata) > 0 {
+			m := sk.Metadata
+			s.Metadata = &m
+		}
+		out[i] = s
+	}
+	return &out
+}
+
+func toMCP(servers map[string]plugin.MCPServer) *map[string]MCPServer {
+	if len(servers) == 0 {
+		return nil
+	}
+	out := make(map[string]MCPServer, len(servers))
+	for name, srv := range servers {
+		m := MCPServer{
+			Type:    MCPServerType(srv.Type),
+			Command: stringPtr(srv.Command),
+			Cwd:     stringPtr(srv.Cwd),
+			Url:     stringPtr(srv.URL),
+		}
+		if len(srv.Args) > 0 {
+			args := srv.Args
+			m.Args = &args
+		}
+		if len(srv.Env) > 0 {
+			env := srv.Env
+			m.Env = &env
+		}
+		if len(srv.Headers) > 0 {
+			headers := srv.Headers
+			m.Headers = &headers
+		}
+		out[name] = m
+	}
+	return &out
+}
+
+func toPlugin(p *plugin.Plugin) Plugin {
+	pl := Plugin{
+		Name:        p.Manifest.Name,
+		Version:     stringPtr(p.Manifest.Version),
+		Description: stringPtr(p.Manifest.Description),
+		Author:      toAuthor(p.Manifest.Author),
+		Homepage:    stringPtr(p.Manifest.Homepage),
+		Repository:  stringPtr(p.Manifest.Repository),
+		License:     stringPtr(p.Manifest.License),
+		Source:      p.SourceName,
+		Extensions:  toExtensions(p.Manifest.Extensions),
+		Skills:      toSkills(p.Skills),
+	}
+	if len(p.Manifest.Keywords) > 0 {
+		keywords := p.Manifest.Keywords
+		pl.Keywords = &keywords
+	}
+	if len(p.Warnings) > 0 {
+		warnings := p.Warnings
+		pl.Warnings = &warnings
+	}
+	if p.MCP != nil {
+		pl.Mcp = toMCP(p.MCP.MCPServers)
+	}
+	return pl
+}
+
+func (s *Server) ListPlugins(w http.ResponseWriter, r *http.Request) {
 	list := s.reg.List()
-	out := make([]pluginSummary, 0, len(list))
+	out := make([]Plugin, 0, len(list))
 	for _, p := range list {
-		out = append(out, summarize(p))
+		out = append(out, toPlugin(p))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	if rest, ok := strings.CutSuffix(name, ".zip"); ok {
-		s.handleDownload(w, r, rest)
+func (s *Server) DownloadPlugin(w http.ResponseWriter, r *http.Request, name string) {
+	name, ok := strings.CutSuffix(name, ".zip")
+	if !ok {
+		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "plugin not found"})
 		return
 	}
-
 	p, ok := s.reg.Get(name)
 	if !ok {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "plugin not found"})
-		return
-	}
-	detail := pluginDetail{
-		pluginSummary: summarize(p),
-		Manifest:      toManifestView(p.Manifest),
-		Skills:        p.Skills,
-		Warnings:      p.Warnings,
-	}
-	if p.MCP != nil {
-		detail.MCP = p.MCP.MCPServers
-	}
-	writeJSON(w, http.StatusOK, detail)
-}
-
-func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request, name string) {
-	p, ok := s.reg.Get(name)
-	if !ok {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "plugin not found"})
+		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "plugin not found"})
 		return
 	}
 	if _, err := os.Stat(p.ZipPath); err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "plugin archive not available"})
+		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "plugin archive not available"})
 		return
 	}
 	w.Header().Set("Content-Disposition", `attachment; filename="`+filepath.Base(name)+`.zip"`)
