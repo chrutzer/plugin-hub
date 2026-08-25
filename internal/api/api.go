@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +11,11 @@ import (
 	"github.com/chrutzer/plugin-hub/internal/plugin"
 	"github.com/chrutzer/plugin-hub/internal/registry"
 )
+
+func init() {
+	// Go's mime package does not register SVG on all platforms.
+	_ = mime.AddExtensionType(".svg", "image/svg+xml")
+}
 
 type Server struct {
 	reg *registry.Registry
@@ -138,6 +144,9 @@ func toPlugin(p *plugin.Plugin) Plugin {
 		Extensions:  toExtensions(p.Manifest.Extensions),
 		Skills:      toSkills(p.Skills),
 	}
+	if p.IconPath != "" {
+		pl.Icon = stringPtr("/" + p.Manifest.Name + "/icon")
+	}
 	if len(p.Manifest.Keywords) > 0 {
 		keywords := p.Manifest.Keywords
 		pl.Keywords = &keywords
@@ -178,6 +187,19 @@ func (s *Server) DownloadPlugin(w http.ResponseWriter, r *http.Request, name str
 	}
 	w.Header().Set("Content-Disposition", `attachment; filename="`+filepath.Base(name)+`.zip"`)
 	http.ServeFile(w, r, p.ZipPath)
+}
+
+func (s *Server) DownloadPluginIcon(w http.ResponseWriter, r *http.Request, name string) {
+	p, ok := s.reg.Get(name)
+	if !ok || p.IconPath == "" {
+		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "plugin icon not found"})
+		return
+	}
+	if _, err := os.Stat(p.IconPath); err != nil {
+		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "plugin icon not found"})
+		return
+	}
+	http.ServeFile(w, r, p.IconPath)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {

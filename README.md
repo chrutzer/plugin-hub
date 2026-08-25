@@ -54,10 +54,15 @@ sources:
 | ------ | --------------------------------- | ------------------------------------ |
 | GET    | `/`                                | List loaded plugins, full detail incl. skills/MCP. |
 | GET    | `/{name}.zip`                      | Download the plugin's original zip.  |
+| GET    | `/{name}/icon`                     | Download the plugin's icon, if it has one. |
 
 Plugins are keyed by their manifest `name` (from `plugin.json`), not the
 source name. For plugins loaded from a bundle, `/{name}.zip` downloads that
 plugin's own nested zip, not the outer bundle.
+
+A plugin's icon is its `icon.png`, `icon.jpg`, or `icon.svg` file (checked in
+that order) at the plugin's root, alongside `plugin.json`. When present, the
+plugin's `icon` field in `GET /` gives the path to fetch it from.
 
 ## Notes
 

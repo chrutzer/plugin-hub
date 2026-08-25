@@ -74,8 +74,11 @@ type Plugin struct {
 	// Extensions Vendor extension namespaces, each an arbitrary JSON object.
 	Extensions *map[string]map[string]interface{} `json:"extensions,omitempty"`
 	Homepage   *string                            `json:"homepage,omitempty"`
-	Keywords   *[]string                          `json:"keywords,omitempty"`
-	License    *string                            `json:"license,omitempty"`
+
+	// Icon Path to fetch this plugin's icon from, if it has one, e.g. `/my-plugin/icon`.
+	Icon     *string   `json:"icon,omitempty"`
+	Keywords *[]string `json:"keywords,omitempty"`
+	License  *string   `json:"license,omitempty"`
 
 	// Mcp MCP servers keyed by server name.
 	Mcp        *map[string]MCPServer `json:"mcp,omitempty"`
@@ -184,6 +187,11 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /{name} (the `DownloadPlugin` operationId).
 	DownloadPlugin(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadPluginIcon Download a plugin's icon
+	//
+	// Corresponds with GET /{name}/icon (the `DownloadPluginIcon` operationId).
+	DownloadPluginIcon(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListPlugins List loaded plugins
@@ -206,6 +214,21 @@ func (c *Client) ListPlugins(ctx context.Context, reqEditors ...RequestEditorFn)
 // Corresponds with GET /{name} (the `DownloadPlugin` operationId).
 func (c *Client) DownloadPlugin(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDownloadPluginRequest(c.Server, name)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadPluginIcon Download a plugin's icon
+//
+// Corresponds with GET /{name}/icon (the `DownloadPluginIcon` operationId).
+func (c *Client) DownloadPluginIcon(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadPluginIconRequest(c.Server, name)
 	if err != nil {
 		return nil, err
 	}
@@ -260,6 +283,40 @@ func NewDownloadPluginRequest(server string, name string) (*http.Request, error)
 	}
 
 	operationPath := fmt.Sprintf("/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadPluginIconRequest constructs an http.Request for the DownloadPluginIcon method
+func NewDownloadPluginIconRequest(server string, name string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "name", name, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/%s/icon", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -334,6 +391,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /{name} (the `DownloadPlugin` operationId).
 	DownloadPluginWithResponse(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*DownloadPluginResponse, error)
+
+	// DownloadPluginIconWithResponse Download a plugin's icon
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /{name}/icon (the `DownloadPluginIcon` operationId).
+	DownloadPluginIconWithResponse(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*DownloadPluginIconResponse, error)
 }
 
 type ListPluginsResponse struct {
@@ -418,6 +482,47 @@ func (r DownloadPluginResponse) ContentType() string {
 	return ""
 }
 
+type DownloadPluginIconResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ErrorResponse
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DownloadPluginIconResponse) GetJSON404() *ErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadPluginIconResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadPluginIconResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadPluginIconResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadPluginIconResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListPluginsWithResponse List loaded plugins
 //
 // Returns a wrapper object for the known response body format(s).
@@ -442,6 +547,19 @@ func (c *ClientWithResponses) DownloadPluginWithResponse(ctx context.Context, na
 		return nil, err
 	}
 	return ParseDownloadPluginResponse(rsp)
+}
+
+// DownloadPluginIconWithResponse Download a plugin's icon
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /{name}/icon (the `DownloadPluginIcon` operationId).
+func (c *ClientWithResponses) DownloadPluginIconWithResponse(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*DownloadPluginIconResponse, error) {
+	rsp, err := c.DownloadPluginIcon(ctx, name, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadPluginIconResponse(rsp)
 }
 
 // ParseListPluginsResponse parses an HTTP response from a ListPluginsWithResponse call
@@ -479,6 +597,32 @@ func ParseDownloadPluginResponse(rsp *http.Response) (*DownloadPluginResponse, e
 	}
 
 	response := &DownloadPluginResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDownloadPluginIconResponse parses an HTTP response from a DownloadPluginIconWithResponse call
+func ParseDownloadPluginIconResponse(rsp *http.Response) (*DownloadPluginIconResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadPluginIconResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

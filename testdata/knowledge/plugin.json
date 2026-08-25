@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "knowledge",
+    "version": "1.0.0",
+    "description": "Skills for digesting, searching, synthesizing, and managing sources of knowledge.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

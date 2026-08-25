@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#0F766E"/>
+  <!-- Bar chart with trend line -->
+  <rect x="12" y="38" width="8" height="14" rx="1" fill="white" opacity="0.7"/>
+  <rect x="24" y="28" width="8" height="24" rx="1" fill="white" opacity="0.85"/>
+  <rect x="36" y="20" width="8" height="32" rx="1" fill="white"/>
+  <rect x="48" y="30" width="8" height="22" rx="1" fill="white" opacity="0.85"/>
+  <!-- Trend line -->
+  <polyline points="16,34 28,24 40,16 52,26" stroke="#CCFBF1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="52" cy="26" r="3" fill="white"/>
+</svg>

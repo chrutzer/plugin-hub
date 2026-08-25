@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "marketing",
+    "version": "1.0.0",
+    "description": "Skills for brand review, campaign planning, competitive briefs, content creation, email sequences, performance reporting, and SEO audits.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "studio",
+    "version": "1.0.0",
+    "description": "Skills for visual and document creation: diagrams, dashboards, design systems, PDFs, slides, spreadsheets, images, and polish/review passes.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

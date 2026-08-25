@@ -71,8 +71,11 @@ type Plugin struct {
 	// Extensions Vendor extension namespaces, each an arbitrary JSON object.
 	Extensions *map[string]map[string]interface{} `json:"extensions,omitempty"`
 	Homepage   *string                            `json:"homepage,omitempty"`
-	Keywords   *[]string                          `json:"keywords,omitempty"`
-	License    *string                            `json:"license,omitempty"`
+
+	// Icon Path to fetch this plugin's icon from, if it has one, e.g. `/my-plugin/icon`.
+	Icon     *string   `json:"icon,omitempty"`
+	Keywords *[]string `json:"keywords,omitempty"`
+	License  *string   `json:"license,omitempty"`
 
 	// Mcp MCP servers keyed by server name.
 	Mcp        *map[string]MCPServer `json:"mcp,omitempty"`
@@ -106,6 +109,9 @@ type ServerInterface interface {
 	// DownloadPlugin Download a plugin's original zip archive
 	// (GET /{name})
 	DownloadPlugin(w http.ResponseWriter, r *http.Request, name string)
+	// DownloadPluginIcon Download a plugin's icon
+	// (GET /{name}/icon)
+	DownloadPluginIcon(w http.ResponseWriter, r *http.Request, name string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -148,6 +154,32 @@ func (siw *ServerInterfaceWrapper) DownloadPlugin(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DownloadPlugin(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadPluginIcon operation middleware
+func (siw *ServerInterfaceWrapper) DownloadPluginIcon(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadPluginIcon(w, r, name)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -279,6 +311,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/{$}", wrapper.ListPlugins)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/{name}", wrapper.DownloadPlugin)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/{name}/icon", wrapper.DownloadPluginIcon)
 
 	return m
 }

@@ -51,6 +51,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /{name}/icon:
+    get:
+      summary: Download a plugin's icon
+      operationId: downloadPluginIcon
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Plugin name, e.g. `my-plugin` for the plugin named `my-plugin` in its `plugin.json` manifest.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The plugin's icon file (icon.png, icon.jpg, or icon.svg).
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No plugin with this name is loaded, or it has no icon.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     ErrorResponse:
@@ -90,6 +115,9 @@ components:
         source:
           type: string
           description: The source location (URL or path) this plugin was loaded from.
+        icon:
+          type: string
+          description: Path to fetch this plugin's icon from, if it has one, e.g. `/my-plugin/icon`.
         skills:
           type: array
           items:

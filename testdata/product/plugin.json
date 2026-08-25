@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "product",
+    "version": "1.0.0",
+    "description": "Skills for metrics review, product brainstorming, roadmap updates, sprint planning, stakeholder updates, research synthesis, and writing specs.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "writing",
+    "version": "1.0.0",
+    "description": "Skills for collaborative document authoring and internal communications.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

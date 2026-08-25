@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "finance",
+    "version": "1.0.0",
+    "description": "Skills for close management, financial statements, journal entry prep, reconciliation, and variance analysis.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

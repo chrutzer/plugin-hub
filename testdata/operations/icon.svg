@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#D97706"/>
+  <!-- Gear -->
+  <circle cx="32" cy="32" r="8" fill="white"/>
+  <circle cx="32" cy="32" r="4" fill="#D97706"/>
+  <path d="M32 12 L34 20 L30 20 Z" fill="white"/>
+  <path d="M32 52 L34 44 L30 44 Z" fill="white"/>
+  <path d="M12 32 L20 34 L20 30 Z" fill="white"/>
+  <path d="M52 32 L44 34 L44 30 Z" fill="white"/>
+  <path d="M18.1 18.1 L23.8 24.5 L21 27.3 Z" fill="white"/>
+  <path d="M45.9 45.9 L40.2 39.5 L43 36.7 Z" fill="white"/>
+  <path d="M45.9 18.1 L39.5 23.8 L36.7 21 Z" fill="white"/>
+  <path d="M18.1 45.9 L24.5 40.2 L27.3 43 Z" fill="white"/>
+</svg>

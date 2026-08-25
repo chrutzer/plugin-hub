@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#7C3AED"/>
+  <!-- Palette -->
+  <circle cx="32" cy="30" r="16" fill="white"/>
+  <circle cx="32" cy="30" r="16" fill="none" stroke="#7C3AED" stroke-width="1.5"/>
+  <circle cx="24" cy="24" r="3" fill="#EF4444"/>
+  <circle cx="32" cy="20" r="3" fill="#F59E0B"/>
+  <circle cx="40" cy="24" r="3" fill="#10B981"/>
+  <circle cx="40" cy="34" r="3" fill="#3B82F6"/>
+  <circle cx="24" cy="34" r="3" fill="#EC4899"/>
+  <!-- Thumb hole -->
+  <circle cx="34" cy="34" r="5" fill="#7C3AED"/>
+</svg>

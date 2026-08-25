@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#DC2626"/>
+  <!-- Megaphone -->
+  <path d="M14 24 L14 40 L22 40 L22 24 Z" fill="white"/>
+  <path d="M22 22 L46 14 L46 50 L22 42 Z" fill="white"/>
+  <!-- Sound waves -->
+  <path d="M48 22 Q54 32 48 42" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M50 18 Q58 32 50 46" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+</svg>

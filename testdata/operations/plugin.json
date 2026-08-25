@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "operations",
+    "version": "1.0.0",
+    "description": "Skills for capacity planning, change requests, compliance tracking, process docs and optimization, risk assessment, runbooks, status reports, and vendor review.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

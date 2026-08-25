@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "customer-support",
+    "version": "1.0.0",
+    "description": "Skills for triaging tickets, researching customers, escalating issues, and drafting support responses and KB articles.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

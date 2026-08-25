@@ -1,0 +1,10 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "sales",
+    "version": "1.0.0",
+    "description": "Skills for account research, call prep and summaries, competitive intelligence, daily briefings, outreach drafting, forecasting, and pipeline review.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT"
+}

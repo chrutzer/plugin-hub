@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#BE185D"/>
+  <!-- Pen tool / bezier -->
+  <circle cx="14" cy="50" r="4" fill="white"/>
+  <circle cx="50" cy="14" r="4" fill="white"/>
+  <path d="M14 50 C14 22 50 42 50 14" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Control handles -->
+  <circle cx="14" cy="22" r="3" fill="none" stroke="white" stroke-width="2"/>
+  <line x1="14" y1="50" x2="14" y2="22" stroke="white" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.7"/>
+  <circle cx="50" cy="42" r="3" fill="none" stroke="white" stroke-width="2"/>
+  <line x1="50" y1="14" x2="50" y2="42" stroke="white" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.7"/>
+</svg>

@@ -15,7 +15,12 @@ type Plugin struct {
 
 	SourceName string
 	ZipPath    string
+	IconPath   string
 }
+
+// iconFilenames are the supported plugin icon filenames, in lookup priority
+// order.
+var iconFilenames = []string{"icon.png", "icon.jpg", "icon.svg"}
 
 // Load reads a plugin from an extracted directory (rootDir), applying the
 // discovery and failure-isolation rules from the Agent Plugins v1 spec.
@@ -51,6 +56,20 @@ func Load(rootDir string) (*Plugin, error) {
 		} else {
 			p.Warnings = append(p.Warnings, "skills/ is not a directory, skipped")
 		}
+	}
+
+	for _, name := range iconFilenames {
+		iconPath := filepath.Join(rootDir, name)
+		info, err := os.Stat(iconPath)
+		if err != nil {
+			continue
+		}
+		if !info.Mode().IsRegular() || !resolvesWithin(rootDir, iconPath) {
+			p.Warnings = append(p.Warnings, fmt.Sprintf("%s is not a regular file, skipped", name))
+			continue
+		}
+		p.IconPath = iconPath
+		break
 	}
 
 	mcpPath := filepath.Join(rootDir, "mcp.json")
