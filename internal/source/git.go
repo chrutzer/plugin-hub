@@ -2,37 +2,30 @@ package source
 
 import (
 	"fmt"
-	"net/url"
-	"os/exec"
-	"strings"
+
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-// CloneGit clones repoURL into destDir (shallow, single branch). If token is
-// non-empty it is embedded in the URL as a credential for HTTPS remotes.
+// CloneGit clones repoURL into destDir (shallow, single branch) using pure Go.
+// If token is non-empty it is used as a Bearer token for HTTPS remotes.
 // If branch is non-empty only that branch is cloned.
 func CloneGit(repoURL, destDir, token, branch string) error {
-	cloneURL := repoURL
+	opts := &gogit.CloneOptions{
+		URL:   repoURL,
+		Depth: 1,
+	}
 	if token != "" {
-		cloneURL = embedToken(repoURL, token)
+		opts.Auth = &http.BasicAuth{Username: "oauth2", Password: token}
 	}
-	args := []string{"clone", "--depth=1", "--quiet"}
 	if branch != "" {
-		args = append(args, "--branch", branch)
+		opts.ReferenceName = plumbing.NewBranchReferenceName(branch)
+		opts.SingleBranch = true
 	}
-	args = append(args, cloneURL, destDir)
-	cmd := exec.Command("git", args...)
-	out, err := cmd.CombinedOutput()
+	_, err := gogit.PlainClone(destDir, false, opts)
 	if err != nil {
-		return fmt.Errorf("git clone %s: %w\n%s", repoURL, err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("git clone %s: %w", repoURL, err)
 	}
 	return nil
-}
-
-func embedToken(rawURL, token string) string {
-	u, err := url.Parse(rawURL)
-	if err != nil || u.Scheme == "" {
-		return rawURL
-	}
-	u.User = url.UserPassword("oauth2", token)
-	return u.String()
 }
