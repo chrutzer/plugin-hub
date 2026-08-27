@@ -124,6 +124,12 @@ func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Pl
 			log.Printf("source %q: load %q: %v", src.URL, e.Name(), err)
 			continue
 		}
+		zipPath := filepath.Join(srcDir, e.Name()+".zip")
+		if err := source.Fetch(dir, zipPath); err != nil {
+			log.Printf("source %q: zip %q: %v", src.URL, e.Name(), err)
+			continue
+		}
+		p.ZipPath = zipPath
 		plugins = append(plugins, p)
 	}
 
@@ -134,6 +140,11 @@ func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Pl
 			if err != nil {
 				return nil, fmt.Errorf("load root plugin: %w", err)
 			}
+			zipPath := filepath.Join(srcDir, "root.zip")
+			if err := source.Fetch(repoDir, zipPath); err != nil {
+				return nil, fmt.Errorf("zip root plugin: %w", err)
+			}
+			p.ZipPath = zipPath
 			return []*plugin.Plugin{p}, nil
 		}
 		return nil, fmt.Errorf("no valid plugins found")

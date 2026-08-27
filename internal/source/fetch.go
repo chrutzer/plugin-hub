@@ -2,6 +2,7 @@ package source
 
 import (
 	"archive/zip"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +27,10 @@ func Fetch(location, destZip string) error {
 }
 
 func fetchURL(url, destZip string) error {
-	client := &http.Client{Timeout: 60 * time.Second}
+	client := &http.Client{
+		Timeout:   60 * time.Second,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}, //nolint:gosec
+	}
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("build request %s: %w", url, err)
