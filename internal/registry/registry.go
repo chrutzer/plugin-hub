@@ -101,7 +101,7 @@ func (r *Registry) loadSource(index int, src config.Source) ([]*plugin.Plugin, e
 
 func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Plugin, error) {
 	repoDir := filepath.Join(srcDir, "repo")
-	if err := source.CloneGit(src.URL, repoDir, src.Token); err != nil {
+	if err := source.CloneGit(src.URL, repoDir, src.Token, src.Branch); err != nil {
 		return nil, err
 	}
 

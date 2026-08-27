@@ -8,8 +8,9 @@ import (
 )
 
 type Source struct {
-	URL   string
-	Token string
+	URL    string
+	Token  string
+	Branch string
 }
 
 func (s *Source) UnmarshalYAML(value *yaml.Node) error {
@@ -21,6 +22,7 @@ func (s *Source) UnmarshalYAML(value *yaml.Node) error {
 		URL      string `yaml:"url"`
 		Token    string `yaml:"token"`
 		TokenEnv string `yaml:"token_env"`
+		Branch   string `yaml:"branch"`
 	}
 	var p plain
 	if err := value.Decode(&p); err != nil {
@@ -31,6 +33,7 @@ func (s *Source) UnmarshalYAML(value *yaml.Node) error {
 	if p.TokenEnv != "" {
 		s.Token = os.Getenv(p.TokenEnv)
 	}
+	s.Branch = p.Branch
 	return nil
 }
 
