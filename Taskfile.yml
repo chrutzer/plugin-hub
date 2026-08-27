@@ -1,5 +1,8 @@
 version: '3'
 
+vars:
+  IMAGE: ghcr.io/chrutzer/plugin-hub
+
 tasks:
   run:
     desc: Run the plugin-hub server
@@ -21,3 +24,8 @@ tasks:
     cmds:
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config client/config.yaml openapi.yaml
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config internal/api/config.yaml openapi.yaml
+
+  publish:
+    desc: Build and push multi-arch Docker image
+    cmds:
+      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.IMAGE}}

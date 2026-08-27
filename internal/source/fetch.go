@@ -27,7 +27,11 @@ func Fetch(location, destZip string) error {
 
 func fetchURL(url, destZip string) error {
 	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("build request %s: %w", url, err)
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("download %s: %w", url, err)
 	}

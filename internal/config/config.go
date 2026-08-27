@@ -7,8 +7,35 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Source struct {
+	URL   string
+	Token string
+}
+
+func (s *Source) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind == yaml.ScalarNode {
+		s.URL = value.Value
+		return nil
+	}
+	type plain struct {
+		URL      string `yaml:"url"`
+		Token    string `yaml:"token"`
+		TokenEnv string `yaml:"token_env"`
+	}
+	var p plain
+	if err := value.Decode(&p); err != nil {
+		return err
+	}
+	s.URL = p.URL
+	s.Token = p.Token
+	if p.TokenEnv != "" {
+		s.Token = os.Getenv(p.TokenEnv)
+	}
+	return nil
+}
+
 type Config struct {
-	Sources []string `yaml:"sources"`
+	Sources []Source `yaml:"sources"`
 }
 
 func Load(path string) (*Config, error) {
@@ -23,8 +50,8 @@ func Load(path string) (*Config, error) {
 	}
 
 	for i, s := range cfg.Sources {
-		if s == "" {
-			return nil, fmt.Errorf("source %d: must not be empty", i)
+		if s.URL == "" {
+			return nil, fmt.Errorf("source %d: url must not be empty", i)
 		}
 	}
 

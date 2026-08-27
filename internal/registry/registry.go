@@ -16,7 +16,7 @@ import (
 
 type Registry struct {
 	cacheDir string
-	sources  []string
+	sources  []config.Source
 
 	mu      sync.RWMutex
 	plugins map[string]*plugin.Plugin
@@ -45,13 +45,13 @@ func (r *Registry) Reload() {
 	for i, src := range r.sources {
 		loaded, err := r.loadSource(i, src)
 		if err != nil {
-			log.Printf("source %q: %v", src, err)
+			log.Printf("source %q: %v", src.URL, err)
 			continue
 		}
 		for _, p := range loaded {
-			p.SourceName = src
+			p.SourceName = src.URL
 			for _, w := range p.Warnings {
-				log.Printf("source %q: %s", src, w)
+				log.Printf("source %q: %s", src.URL, w)
 			}
 			plugins[p.Manifest.Name] = p
 		}
@@ -62,14 +62,18 @@ func (r *Registry) Reload() {
 	r.mu.Unlock()
 }
 
-func (r *Registry) loadSource(index int, location string) ([]*plugin.Plugin, error) {
+func (r *Registry) loadSource(index int, src config.Source) ([]*plugin.Plugin, error) {
 	srcDir := filepath.Join(r.cacheDir, fmt.Sprintf("source-%d", index))
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create cache dir: %w", err)
 	}
 
+	if strings.HasSuffix(src.URL, ".git") {
+		return r.loadGitSource(src, srcDir)
+	}
+
 	zipPath := filepath.Join(srcDir, "source.zip")
-	if err := source.Fetch(location, zipPath); err != nil {
+	if err := source.Fetch(src.URL, zipPath); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +86,7 @@ func (r *Registry) loadSource(index int, location string) ([]*plugin.Plugin, err
 	for _, f := range found {
 		p, err := plugin.Load(f.root)
 		if err != nil {
-			log.Printf("source %q: load %q: %v", location, filepath.Base(f.zipPath), err)
+			log.Printf("source %q: load %q: %v", src.URL, filepath.Base(f.zipPath), err)
 			continue
 		}
 		p.ZipPath = f.zipPath
@@ -92,6 +96,48 @@ func (r *Registry) loadSource(index int, location string) ([]*plugin.Plugin, err
 		return nil, fmt.Errorf("no valid plugins found")
 	}
 
+	return plugins, nil
+}
+
+func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Plugin, error) {
+	repoDir := filepath.Join(srcDir, "repo")
+	if err := source.CloneGit(src.URL, repoDir, src.Token); err != nil {
+		return nil, err
+	}
+
+	entries, err := os.ReadDir(repoDir)
+	if err != nil {
+		return nil, fmt.Errorf("read repo dir: %w", err)
+	}
+
+	var plugins []*plugin.Plugin
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		dir := filepath.Join(repoDir, e.Name())
+		if _, err := os.Stat(filepath.Join(dir, "plugin.json")); err != nil {
+			continue
+		}
+		p, err := plugin.Load(dir)
+		if err != nil {
+			log.Printf("source %q: load %q: %v", src.URL, e.Name(), err)
+			continue
+		}
+		plugins = append(plugins, p)
+	}
+
+	if len(plugins) == 0 {
+		// repo root may itself be a single plugin
+		if _, err := os.Stat(filepath.Join(repoDir, "plugin.json")); err == nil {
+			p, err := plugin.Load(repoDir)
+			if err != nil {
+				return nil, fmt.Errorf("load root plugin: %w", err)
+			}
+			return []*plugin.Plugin{p}, nil
+		}
+		return nil, fmt.Errorf("no valid plugins found")
+	}
 	return plugins, nil
 }
 

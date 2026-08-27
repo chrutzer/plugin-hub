@@ -1,2 +1,7 @@
 sources:
   - testdata/engineering
+  - url: https://example.com/plugins/my-plugin.zip
+  - url: https://github.com/your-org/plugins-repo.git
+    token: ghp_yourTokenHere
+  - url: https://github.com/your-org/other-repo.git
+    token_env: GIT_TOKEN
