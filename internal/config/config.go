@@ -19,20 +19,16 @@ func (s *Source) UnmarshalYAML(value *yaml.Node) error {
 		return nil
 	}
 	type plain struct {
-		URL      string `yaml:"url"`
-		Token    string `yaml:"token"`
-		TokenEnv string `yaml:"token_env"`
-		Branch   string `yaml:"branch"`
+		URL    string `yaml:"url"`
+		Token  string `yaml:"token"`
+		Branch string `yaml:"branch"`
 	}
 	var p plain
 	if err := value.Decode(&p); err != nil {
 		return err
 	}
 	s.URL = p.URL
-	s.Token = p.Token
-	if p.TokenEnv != "" {
-		s.Token = os.Getenv(p.TokenEnv)
-	}
+	s.Token = os.ExpandEnv(p.Token)
 	s.Branch = p.Branch
 	return nil
 }
