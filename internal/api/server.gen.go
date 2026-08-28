@@ -6,6 +6,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -101,11 +102,17 @@ type Skill struct {
 	Name          string             `json:"name"`
 }
 
+// ListPluginsParams defines parameters for ListPlugins.
+type ListPluginsParams struct {
+	// Keyword Filter plugins to those whose keywords list contains all of the given values (case-insensitive). Repeat the parameter to require multiple keywords, e.g. `?keyword=mcp&keyword=companion`.
+	Keyword *[]string `form:"keyword,omitempty" json:"keyword,omitempty"`
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// ListPlugins List loaded plugins
 	// (GET /)
-	ListPlugins(w http.ResponseWriter, r *http.Request)
+	ListPlugins(w http.ResponseWriter, r *http.Request, params ListPluginsParams)
 	// DownloadPlugin Download a plugin's original zip archive
 	// (GET /{name})
 	DownloadPlugin(w http.ResponseWriter, r *http.Request, name string)
@@ -126,8 +133,27 @@ type MiddlewareFunc func(http.Handler) http.Handler
 // ListPlugins operation middleware
 func (siw *ServerInterfaceWrapper) ListPlugins(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPluginsParams
+
+	// ------------- Optional query parameter "keyword" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", r.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "keyword"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "keyword", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListPlugins(w, r)
+		siw.Handler.ListPlugins(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {

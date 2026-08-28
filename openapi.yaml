@@ -15,6 +15,16 @@ paths:
     get:
       summary: List loaded plugins
       operationId: listPlugins
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          description: Filter plugins to those whose keywords list contains all of the given values (case-insensitive). Repeat the parameter to require multiple keywords, e.g. `?keyword=mcp&keyword=companion`.
+          schema:
+            type: array
+            items:
+              type: string
+          explode: true
       responses:
         "200":
           description: Full detail of every currently loaded plugin, including manifest, skills, and MCP servers.

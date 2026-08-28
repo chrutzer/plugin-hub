@@ -104,6 +104,12 @@ type Skill struct {
 	Name          string             `json:"name"`
 }
 
+// ListPluginsParams defines parameters for ListPlugins.
+type ListPluginsParams struct {
+	// Keyword Filter plugins to those whose keywords list contains all of the given values (case-insensitive). Repeat the parameter to require multiple keywords, e.g. `?keyword=mcp&keyword=companion`.
+	Keyword *[]string `form:"keyword,omitempty" json:"keyword,omitempty"`
+}
+
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -181,7 +187,7 @@ type ClientInterface interface {
 	// ListPlugins List loaded plugins
 	//
 	// Corresponds with GET / (the `ListPlugins` operationId).
-	ListPlugins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPlugins(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DownloadPlugin Download a plugin's original zip archive
 	//
@@ -197,8 +203,8 @@ type ClientInterface interface {
 // ListPlugins List loaded plugins
 //
 // Corresponds with GET / (the `ListPlugins` operationId).
-func (c *Client) ListPlugins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPluginsRequest(c.Server)
+func (c *Client) ListPlugins(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPluginsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +246,7 @@ func (c *Client) DownloadPluginIcon(ctx context.Context, name string, reqEditors
 }
 
 // NewListPluginsRequest constructs an http.Request for the ListPlugins method
-func NewListPluginsRequest(server string) (*http.Request, error) {
+func NewListPluginsRequest(server string, params *ListPluginsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -256,6 +262,33 @@ func NewListPluginsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Keyword != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "keyword", *params.Keyword, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -383,7 +416,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET / (the `ListPlugins` operationId).
-	ListPluginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPluginsResponse, error)
+	ListPluginsWithResponse(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*ListPluginsResponse, error)
 
 	// DownloadPluginWithResponse Download a plugin's original zip archive
 	//
@@ -528,8 +561,8 @@ func (r DownloadPluginIconResponse) ContentType() string {
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET / (the `ListPlugins` operationId).
-func (c *ClientWithResponses) ListPluginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPluginsResponse, error) {
-	rsp, err := c.ListPlugins(ctx, reqEditors...)
+func (c *ClientWithResponses) ListPluginsWithResponse(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*ListPluginsResponse, error) {
+	rsp, err := c.ListPlugins(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

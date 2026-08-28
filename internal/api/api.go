@@ -161,10 +161,26 @@ func toPlugin(p *plugin.Plugin) Plugin {
 	return pl
 }
 
-func (s *Server) ListPlugins(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ListPlugins(w http.ResponseWriter, r *http.Request, params ListPluginsParams) {
 	list := s.reg.List()
 	out := make([]Plugin, 0, len(list))
 	for _, p := range list {
+		if params.Keyword != nil && len(*params.Keyword) > 0 {
+			pluginKWs := make(map[string]struct{}, len(p.Manifest.Keywords))
+			for _, k := range p.Manifest.Keywords {
+				pluginKWs[strings.ToLower(k)] = struct{}{}
+			}
+			match := true
+			for _, kw := range *params.Keyword {
+				if _, ok := pluginKWs[strings.ToLower(kw)]; !ok {
+					match = false
+					break
+				}
+			}
+			if !match {
+				continue
+			}
+		}
 		out = append(out, toPlugin(p))
 	}
 	writeJSON(w, http.StatusOK, out)
