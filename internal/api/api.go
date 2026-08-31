@@ -145,7 +145,7 @@ func toPlugin(p *plugin.Plugin) Plugin {
 		Skills:      toSkills(p.Skills),
 	}
 	if p.IconPath != "" {
-		pl.Icon = stringPtr("/" + p.Manifest.Name + "/icon")
+		pl.Icon = stringPtr(p.Manifest.Name + "/icon")
 	}
 	if len(p.Manifest.Keywords) > 0 {
 		keywords := p.Manifest.Keywords
