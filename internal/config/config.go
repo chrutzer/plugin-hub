@@ -8,9 +8,11 @@ import (
 )
 
 type Source struct {
-	URL    string
-	Token  string
-	Branch string
+	URL      string
+	Token    string
+	Branch   string
+	Path     string
+	Keywords []string
 }
 
 func (s *Source) UnmarshalYAML(value *yaml.Node) error {
@@ -19,9 +21,11 @@ func (s *Source) UnmarshalYAML(value *yaml.Node) error {
 		return nil
 	}
 	type plain struct {
-		URL    string `yaml:"url"`
-		Token  string `yaml:"token"`
-		Branch string `yaml:"branch"`
+		URL      string   `yaml:"url"`
+		Token    string   `yaml:"token"`
+		Branch   string   `yaml:"branch"`
+		Path     string   `yaml:"path"`
+		Keywords []string `yaml:"keywords"`
 	}
 	var p plain
 	if err := value.Decode(&p); err != nil {
@@ -30,6 +34,8 @@ func (s *Source) UnmarshalYAML(value *yaml.Node) error {
 	s.URL = p.URL
 	s.Token = os.ExpandEnv(p.Token)
 	s.Branch = p.Branch
+	s.Path = p.Path
+	s.Keywords = p.Keywords
 	return nil
 }
 

@@ -50,6 +50,7 @@ func (r *Registry) Reload() {
 		}
 		for _, p := range loaded {
 			p.SourceName = src.URL
+			p.Manifest.Keywords = mergeKeywords(p.Manifest.Keywords, src.Keywords)
 			for _, w := range p.Warnings {
 				log.Printf("source %q: %s", src.URL, w)
 			}
@@ -60,6 +61,26 @@ func (r *Registry) Reload() {
 	r.mu.Lock()
 	r.plugins = plugins
 	r.mu.Unlock()
+}
+
+// mergeKeywords appends extra to base, skipping duplicates (case-insensitive).
+func mergeKeywords(base, extra []string) []string {
+	if len(extra) == 0 {
+		return base
+	}
+	seen := make(map[string]struct{}, len(base))
+	for _, k := range base {
+		seen[strings.ToLower(k)] = struct{}{}
+	}
+	merged := base
+	for _, k := range extra {
+		if _, ok := seen[strings.ToLower(k)]; ok {
+			continue
+		}
+		seen[strings.ToLower(k)] = struct{}{}
+		merged = append(merged, k)
+	}
+	return merged
 }
 
 func (r *Registry) loadSource(index int, src config.Source) ([]*plugin.Plugin, error) {
@@ -105,7 +126,16 @@ func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Pl
 		return nil, err
 	}
 
-	entries, err := os.ReadDir(repoDir)
+	baseDir := repoDir
+	if src.Path != "" {
+		resolved, err := resolveRepoPath(repoDir, src.Path)
+		if err != nil {
+			return nil, err
+		}
+		baseDir = resolved
+	}
+
+	entries, err := os.ReadDir(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("read repo dir: %w", err)
 	}
@@ -115,7 +145,7 @@ func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Pl
 		if !e.IsDir() {
 			continue
 		}
-		dir := filepath.Join(repoDir, e.Name())
+		dir := filepath.Join(baseDir, e.Name())
 		if _, err := os.Stat(filepath.Join(dir, "plugin.json")); err != nil {
 			continue
 		}
@@ -134,14 +164,14 @@ func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Pl
 	}
 
 	if len(plugins) == 0 {
-		// repo root may itself be a single plugin
-		if _, err := os.Stat(filepath.Join(repoDir, "plugin.json")); err == nil {
-			p, err := plugin.Load(repoDir)
+		// repo path may itself be a single plugin
+		if _, err := os.Stat(filepath.Join(baseDir, "plugin.json")); err == nil {
+			p, err := plugin.Load(baseDir)
 			if err != nil {
 				return nil, fmt.Errorf("load root plugin: %w", err)
 			}
 			zipPath := filepath.Join(srcDir, "root.zip")
-			if err := source.Fetch(repoDir, zipPath); err != nil {
+			if err := source.Fetch(baseDir, zipPath); err != nil {
 				return nil, fmt.Errorf("zip root plugin: %w", err)
 			}
 			p.ZipPath = zipPath
@@ -150,6 +180,20 @@ func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Pl
 		return nil, fmt.Errorf("no valid plugins found")
 	}
 	return plugins, nil
+}
+
+// resolveRepoPath joins path onto repoDir, rejecting any path that would
+// escape repoDir.
+func resolveRepoPath(repoDir, path string) (string, error) {
+	joined := filepath.Join(repoDir, path)
+	rel, err := filepath.Rel(repoDir, joined)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path %q escapes repository", path)
+	}
+	if info, err := os.Stat(joined); err != nil || !info.IsDir() {
+		return "", fmt.Errorf("path %q not found in repository", path)
+	}
+	return joined, nil
 }
 
 type foundPlugin struct {

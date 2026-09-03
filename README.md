@@ -46,7 +46,19 @@ sources:
   - testdata/sample-plugin
   - https://example.com/my-plugin.zip
   - https://example.com/plugin-bundle.zip
+  - url: https://github.com/your-org/plugins-repo.git
+    token: ${GIT_TOKEN}
+    branch: main
+    path: plugins/my-plugin
+    keywords: [internal]
 ```
+
+A source ending in `.git` is cloned instead of fetched as a zip. `token` (if
+set) is used as a Bearer token for HTTPS auth, `branch` clones a specific
+branch, and `path` restricts loading to a subdirectory of the repo (useful
+for monorepos) instead of the repo root. `keywords` is appended to the
+`keywords` list of every plugin loaded from that source (duplicates, checked
+case-insensitively, are skipped).
 
 ## API
 

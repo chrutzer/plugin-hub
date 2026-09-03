@@ -6,3 +6,8 @@ sources:
   - url: https://github.com/your-org/other-repo.git
     token: ${GIT_TOKEN}
     branch: main
+  - url: https://github.com/your-org/monorepo.git
+    path: plugins/my-plugin
+  - url: https://github.com/your-org/internal-plugins.git
+    keywords:
+      - internal
