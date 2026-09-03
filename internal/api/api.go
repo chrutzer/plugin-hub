@@ -34,7 +34,7 @@ func (s *Server) Handler() http.Handler {
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -216,6 +216,11 @@ func (s *Server) DownloadPluginIcon(w http.ResponseWriter, r *http.Request, name
 		return
 	}
 	http.ServeFile(w, r, p.IconPath)
+}
+
+func (s *Server) ReloadPlugins(w http.ResponseWriter, r *http.Request) {
+	go s.reg.Reload()
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {

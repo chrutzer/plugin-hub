@@ -189,6 +189,13 @@ type ClientInterface interface {
 	// Corresponds with GET / (the `ListPlugins` operationId).
 	ListPlugins(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ReloadPlugins Reload all sources
+	//
+	// Re-fetches every configured source and rebuilds the plugin list in the background. Also happens automatically on a timer; use this to trigger it immediately.
+	//
+	// Corresponds with POST /reload (the `ReloadPlugins` operationId).
+	ReloadPlugins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DownloadPlugin Download a plugin's original zip archive
 	//
 	// Corresponds with GET /{name} (the `DownloadPlugin` operationId).
@@ -205,6 +212,23 @@ type ClientInterface interface {
 // Corresponds with GET / (the `ListPlugins` operationId).
 func (c *Client) ListPlugins(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPluginsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReloadPlugins Reload all sources
+//
+// Re-fetches every configured source and rebuilds the plugin list in the background. Also happens automatically on a timer; use this to trigger it immediately.
+//
+// Corresponds with POST /reload (the `ReloadPlugins` operationId).
+func (c *Client) ReloadPlugins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReloadPluginsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -292,6 +316,33 @@ func NewListPluginsRequest(server string, params *ListPluginsParams) (*http.Requ
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReloadPluginsRequest constructs an http.Request for the ReloadPlugins method
+func NewReloadPluginsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/reload")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -418,6 +469,15 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET / (the `ListPlugins` operationId).
 	ListPluginsWithResponse(ctx context.Context, params *ListPluginsParams, reqEditors ...RequestEditorFn) (*ListPluginsResponse, error)
 
+	// ReloadPluginsWithResponse Reload all sources
+	//
+	// Re-fetches every configured source and rebuilds the plugin list in the background. Also happens automatically on a timer; use this to trigger it immediately.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /reload (the `ReloadPlugins` operationId).
+	ReloadPluginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ReloadPluginsResponse, error)
+
 	// DownloadPluginWithResponse Download a plugin's original zip archive
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -468,6 +528,40 @@ func (r ListPluginsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListPluginsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReloadPluginsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// GetBody returns the raw response body bytes
+func (r ReloadPluginsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReloadPluginsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReloadPluginsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReloadPluginsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -569,6 +663,21 @@ func (c *ClientWithResponses) ListPluginsWithResponse(ctx context.Context, param
 	return ParseListPluginsResponse(rsp)
 }
 
+// ReloadPluginsWithResponse Reload all sources
+//
+// Re-fetches every configured source and rebuilds the plugin list in the background. Also happens automatically on a timer; use this to trigger it immediately.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /reload (the `ReloadPlugins` operationId).
+func (c *ClientWithResponses) ReloadPluginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ReloadPluginsResponse, error) {
+	rsp, err := c.ReloadPlugins(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReloadPluginsResponse(rsp)
+}
+
 // DownloadPluginWithResponse Download a plugin's original zip archive
 //
 // Returns a wrapper object for the known response body format(s).
@@ -616,6 +725,22 @@ func ParseListPluginsResponse(rsp *http.Response) (*ListPluginsResponse, error) 
 		}
 		response.JSON200 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseReloadPluginsResponse parses an HTTP response from a ReloadPluginsWithResponse call
+func ParseReloadPluginsResponse(rsp *http.Response) (*ReloadPluginsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReloadPluginsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil

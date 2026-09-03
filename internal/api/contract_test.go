@@ -34,7 +34,7 @@ func TestOpenAPIContract(t *testing.T) {
 		t.Fatalf("build router: %v", err)
 	}
 
-	reg, err := registry.New(&config.Config{Sources: []string{"../../testdata/sample-plugin"}})
+	reg, err := registry.New(&config.Config{Sources: []config.Source{{URL: "../../testdata/engineering"}}})
 	if err != nil {
 		t.Fatalf("registry.New: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestOpenAPIContract(t *testing.T) {
 		status int
 	}{
 		{"list plugins", "/", http.StatusOK},
-		{"download existing plugin", "/sample-plugin.zip", http.StatusOK},
+		{"download existing plugin", "/engineering.zip", http.StatusOK},
 		{"download missing plugin", "/does-not-exist.zip", http.StatusNotFound},
 	}
 

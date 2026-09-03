@@ -61,6 +61,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /reload:
+    post:
+      summary: Reload all sources
+      description: >-
+        Re-fetches every configured source and rebuilds the plugin list in
+        the background. Also happens automatically on a timer; use this to
+        trigger it immediately.
+      operationId: reloadPlugins
+      responses:
+        "202":
+          description: Reload has been started.
   /{name}/icon:
     get:
       summary: Download a plugin's icon

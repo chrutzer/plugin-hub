@@ -113,6 +113,9 @@ type ServerInterface interface {
 	// ListPlugins List loaded plugins
 	// (GET /)
 	ListPlugins(w http.ResponseWriter, r *http.Request, params ListPluginsParams)
+	// ReloadPlugins Reload all sources
+	// (POST /reload)
+	ReloadPlugins(w http.ResponseWriter, r *http.Request)
 	// DownloadPlugin Download a plugin's original zip archive
 	// (GET /{name})
 	DownloadPlugin(w http.ResponseWriter, r *http.Request, name string)
@@ -154,6 +157,20 @@ func (siw *ServerInterfaceWrapper) ListPlugins(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListPlugins(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReloadPlugins operation middleware
+func (siw *ServerInterfaceWrapper) ReloadPlugins(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReloadPlugins(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -337,6 +354,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/{$}", wrapper.ListPlugins)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/{name}", wrapper.DownloadPlugin)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/reload", wrapper.ReloadPlugins)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/{name}/icon", wrapper.DownloadPluginIcon)
 
 	return m

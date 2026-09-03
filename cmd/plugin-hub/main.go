@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/chrutzer/plugin-hub/internal/api"
 	"github.com/chrutzer/plugin-hub/internal/config"
@@ -31,6 +32,14 @@ func main() {
 		log.Fatalf("init registry: %v", err)
 	}
 	reg.Reload()
+
+	go func() {
+		ticker := time.NewTicker(cfg.RefreshInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			reg.Reload()
+		}
+	}()
 
 	srv := api.New(reg)
 

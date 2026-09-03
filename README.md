@@ -37,6 +37,8 @@ go run ./cmd/plugin-hub -config config.example.yaml
 
 Set the `PORT` environment variable to change the listen port (default `8080`).
 Use `-config` to point at a different config file (default `config.yaml`).
+Set the `REFRESH_INTERVAL` environment variable (e.g. `10m`) to change how
+often sources are automatically re-fetched (default `5m`).
 
 ## Config
 
@@ -60,6 +62,11 @@ for monorepos) instead of the repo root. `keywords` is appended to the
 `keywords` list of every plugin loaded from that source (duplicates, checked
 case-insensitively, are skipped).
 
+`REFRESH_INTERVAL` (an environment variable, not a config key) controls how
+often all sources are automatically re-fetched and the plugin list rebuilt
+(default `5m`). A reload can also be triggered immediately via
+`POST /reload`.
+
 ## API
 
 | Method | Path                             | Description                          |
@@ -67,6 +74,7 @@ case-insensitively, are skipped).
 | GET    | `/`                                | List loaded plugins, full detail incl. skills/MCP. |
 | GET    | `/{name}.zip`                      | Download the plugin's original zip.  |
 | GET    | `/{name}/icon`                     | Download the plugin's icon, if it has one. |
+| POST   | `/reload`                          | Trigger an immediate reload of all sources (async). |
 
 Plugins are keyed by their manifest `name` (from `plugin.json`), not the
 source name. For plugins loaded from a bundle, `/{name}.zip` downloads that
@@ -80,6 +88,5 @@ plugin's `icon` field in `GET /` gives the path to fetch it from.
 
 - Zip extraction rejects any entry that would escape the destination
   directory (zip-slip protection), at every nesting level.
-- Not yet implemented: automatic periodic refresh (call `Reload()` yourself
-  on a timer if you need it), and MCP server connection/execution — this
-  service only discovers and validates plugin metadata.
+- Not yet implemented: MCP server connection/execution — this service only
+  discovers and validates plugin metadata.

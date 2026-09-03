@@ -18,8 +18,9 @@ type Registry struct {
 	cacheDir string
 	sources  []config.Source
 
-	mu      sync.RWMutex
-	plugins map[string]*plugin.Plugin
+	reloadMu sync.Mutex
+	mu       sync.RWMutex
+	plugins  map[string]*plugin.Plugin
 }
 
 func New(cfg *config.Config) (*Registry, error) {
@@ -38,12 +39,21 @@ func New(cfg *config.Config) (*Registry, error) {
 // plugin(s) it contains. A source's zip may either be a single plugin, or a
 // bundle of nested zips (each in turn a plugin or another bundle). A failure
 // on one source, or one plugin within a bundle, is logged and skipped; it
-// does not affect others.
+// does not affect others. Concurrent calls are serialized so they never race.
 func (r *Registry) Reload() {
+	r.reloadMu.Lock()
+	defer r.reloadMu.Unlock()
+
+	cacheDir, err := os.MkdirTemp("", "plugin-hub-")
+	if err != nil {
+		log.Printf("reload: create temp cache dir: %v", err)
+		return
+	}
+
 	plugins := map[string]*plugin.Plugin{}
 
 	for i, src := range r.sources {
-		loaded, err := r.loadSource(i, src)
+		loaded, err := r.loadSource(cacheDir, i, src)
 		if err != nil {
 			log.Printf("source %q: %v", src.URL, err)
 			continue
@@ -59,8 +69,14 @@ func (r *Registry) Reload() {
 	}
 
 	r.mu.Lock()
+	oldCacheDir := r.cacheDir
+	r.cacheDir = cacheDir
 	r.plugins = plugins
 	r.mu.Unlock()
+
+	if err := os.RemoveAll(oldCacheDir); err != nil {
+		log.Printf("reload: remove old cache dir: %v", err)
+	}
 }
 
 // mergeKeywords appends extra to base, skipping duplicates (case-insensitive).
@@ -83,8 +99,8 @@ func mergeKeywords(base, extra []string) []string {
 	return merged
 }
 
-func (r *Registry) loadSource(index int, src config.Source) ([]*plugin.Plugin, error) {
-	srcDir := filepath.Join(r.cacheDir, fmt.Sprintf("source-%d", index))
+func (r *Registry) loadSource(cacheDir string, index int, src config.Source) ([]*plugin.Plugin, error) {
+	srcDir := filepath.Join(cacheDir, fmt.Sprintf("source-%d", index))
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		return nil, fmt.Errorf("create cache dir: %w", err)
 	}
@@ -122,6 +138,9 @@ func (r *Registry) loadSource(index int, src config.Source) ([]*plugin.Plugin, e
 
 func (r *Registry) loadGitSource(src config.Source, srcDir string) ([]*plugin.Plugin, error) {
 	repoDir := filepath.Join(srcDir, "repo")
+	if err := os.RemoveAll(repoDir); err != nil {
+		return nil, fmt.Errorf("clear repo cache dir: %w", err)
+	}
 	if err := source.CloneGit(src.URL, repoDir, src.Token, src.Branch); err != nil {
 		return nil, err
 	}

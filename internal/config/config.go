@@ -3,9 +3,12 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+const defaultRefreshInterval = 5 * time.Minute
 
 type Source struct {
 	URL      string
@@ -40,7 +43,8 @@ func (s *Source) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Config struct {
-	Sources []Source `yaml:"sources"`
+	Sources         []Source `yaml:"sources"`
+	RefreshInterval time.Duration
 }
 
 func Load(path string) (*Config, error) {
@@ -58,6 +62,15 @@ func Load(path string) (*Config, error) {
 		if s.URL == "" {
 			return nil, fmt.Errorf("source %d: url must not be empty", i)
 		}
+	}
+
+	cfg.RefreshInterval = defaultRefreshInterval
+	if s := os.Getenv("REFRESH_INTERVAL"); s != "" {
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			return nil, fmt.Errorf("REFRESH_INTERVAL: %w", err)
+		}
+		cfg.RefreshInterval = d
 	}
 
 	return &cfg, nil
