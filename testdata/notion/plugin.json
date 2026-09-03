@@ -1,0 +1,13 @@
+{
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    "name": "notion",
+    "version": "1.0.0",
+    "description": "Skills for searching, creating, and managing content in Notion workspaces.",
+    "author": {
+        "name": "Plugin Hub"
+    },
+    "license": "MIT",
+    "keywords": [
+        "chat"
+    ]
+}
