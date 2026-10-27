@@ -14,8 +14,9 @@ import (
 
 // Fetch retrieves a zip file from a location into destZip. The location is
 // treated as a URL if it starts with "http://" or "https://"; otherwise, if
-// it is a local directory, its contents are zipped into destZip; otherwise
-// it's treated as a local zip file path.
+// it is a local directory, its contents are zipped into destZip (restricted
+// to the files a plugin uses if the directory is a plugin root, see
+// pluginEntryAllowed); otherwise it's treated as a local zip file path.
 func Fetch(location, destZip string) error {
 	if strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") {
 		return fetchURL(location, destZip)
@@ -76,7 +77,30 @@ func fetchFile(path, destZip string) error {
 	return nil
 }
 
+// pluginFiles are the top-level files of a plugin that are packaged.
+var pluginFiles = map[string]bool{
+	"plugin.json": true,
+	"mcp.json":    true,
+	"icon.png":    true,
+	"icon.jpg":    true,
+	"icon.svg":    true,
+}
+
+// pluginEntryAllowed reports whether rel (a path relative to a plugin root)
+// belongs to the plugin: its manifest, MCP config, icon, or skills/ tree.
+func pluginEntryAllowed(rel string) bool {
+	top, _, _ := strings.Cut(filepath.ToSlash(rel), "/")
+	return top == "skills" || pluginFiles[top]
+}
+
 func zipDir(dir, destZip string) error {
+	// Only a plugin root is filtered; other directories (e.g. bundles of
+	// zips) are zipped as a whole.
+	filter := false
+	if _, err := os.Stat(filepath.Join(dir, "plugin.json")); err == nil {
+		filter = true
+	}
+
 	out, err := os.Create(destZip)
 	if err != nil {
 		return err
@@ -93,6 +117,12 @@ func zipDir(dir, destZip string) error {
 			return err
 		}
 		if rel == "." {
+			return nil
+		}
+		if filter && !pluginEntryAllowed(rel) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if info.IsDir() {
