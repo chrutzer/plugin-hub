@@ -55,7 +55,10 @@ type MCPServer struct {
 	Cwd     *string            `json:"cwd,omitempty"`
 	Env     *map[string]string `json:"env,omitempty"`
 	Headers *map[string]string `json:"headers,omitempty"`
-	Type    MCPServerType      `json:"type"`
+
+	// Oauth OAuth configuration for streamable-http and sse servers, passed through to clients.
+	Oauth *map[string]interface{} `json:"oauth,omitempty"`
+	Type  MCPServerType           `json:"type"`
 
 	// Url Required when type is "streamable-http" or "sse".
 	Url *string `json:"url,omitempty"`

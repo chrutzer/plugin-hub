@@ -210,3 +210,7 @@ components:
           type: object
           additionalProperties:
             type: string
+        oauth:
+          type: object
+          description: OAuth configuration for streamable-http and sse servers, passed through to clients.
+          additionalProperties: true

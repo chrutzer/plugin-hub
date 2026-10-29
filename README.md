@@ -24,7 +24,8 @@ loaded plugin's original zip can also be downloaded again.
    - `skills/*/SKILL.md` files are discovered and their YAML frontmatter
      validated per the Agent Skills spec.
    - `mcp.json` is parsed and validated (stdio / streamable-http / sse server
-     entries); invalid entries are skipped without failing the whole plugin.
+     entries); OAuth configuration objects on HTTP and SSE servers are preserved
+     and exposed to clients. Invalid entries are skipped without failing the whole plugin.
 4. A failure in one source, bundle entry, skill, or MCP server entry does not
    affect others (per the spec's failure-isolation rules).
 5. The server exposes the loaded plugins over HTTP.

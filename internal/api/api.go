@@ -126,6 +126,10 @@ func toMCP(servers map[string]plugin.MCPServer) *map[string]MCPServer {
 			headers := srv.Headers
 			m.Headers = &headers
 		}
+		if srv.OAuth != nil {
+			oauth := srv.OAuth
+			m.Oauth = &oauth
+		}
 		out[name] = m
 	}
 	return &out

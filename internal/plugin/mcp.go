@@ -15,13 +15,14 @@ type MCPConfig struct {
 }
 
 type MCPServer struct {
-	Type    string            `json:"type"`
-	Command string            `json:"command,omitempty"`
-	Args    []string          `json:"args,omitempty"`
-	Env     map[string]string `json:"env,omitempty"`
-	Cwd     string            `json:"cwd,omitempty"`
-	URL     string            `json:"url,omitempty"`
-	Headers map[string]string `json:"headers,omitempty"`
+	Type    string                 `json:"type"`
+	Command string                 `json:"command,omitempty"`
+	Args    []string               `json:"args,omitempty"`
+	Env     map[string]string      `json:"env,omitempty"`
+	Cwd     string                 `json:"cwd,omitempty"`
+	URL     string                 `json:"url,omitempty"`
+	Headers map[string]string      `json:"headers,omitempty"`
+	OAuth   map[string]interface{} `json:"oauth,omitempty"`
 }
 
 // ParseMCPConfig parses and validates mcp.json. Invalid server entries are
@@ -108,7 +109,7 @@ func parseMCPServer(data json.RawMessage) (*MCPServer, error) {
 	case "streamable-http", "sse":
 		for f := range fields {
 			switch f {
-			case "type", "url", "headers":
+			case "type", "url", "headers", "oauth":
 			default:
 				return nil, fmt.Errorf("field %q not valid for %s", f, s.Type)
 			}
